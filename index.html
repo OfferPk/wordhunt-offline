@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#122a3a" />
+    <meta name="description" content="WordHunt Offline — find hidden English words on a letter grid. Offline PWA, no account." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>WordHunt Offline</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- HOME -->
+      <section class="screen" data-screen="home">
+        <div class="panel home-panel">
+          <h1 class="logo">WordHunt</h1>
+          <p class="tagline">Offline word search. Find every hidden word.</p>
+          <p class="stats-line">
+            Games <strong id="home-games">0</strong>
+            · Words <strong id="home-words">0</strong>
+          </p>
+          <p class="daily-meta" id="daily-meta"></p>
+          <button type="button" class="btn primary" id="btn-play">Play</button>
+          <button type="button" class="btn secondary" id="btn-daily">
+            <span id="daily-label">Daily Challenge</span>
+          </button>
+          <div class="category-row">
+            <label for="category-select">Theme</label>
+            <select id="category-select" aria-label="Word theme">
+              <option value="Animals">Animals</option>
+              <option value="Food">Food</option>
+              <option value="Travel">Travel</option>
+              <option value="All">All</option>
+            </select>
+          </div>
+          <button type="button" class="btn ghost" id="btn-mute-home">🔊 Sound</button>
+          <button type="button" class="btn ghost" id="btn-remove-ads">Remove ads</button>
+          <button type="button" class="btn ghost" id="btn-howto">How to play</button>
+        </div>
+      </section>
+
+      <!-- HOW TO -->
+      <section class="screen" data-screen="howto" hidden>
+        <div class="panel">
+          <h2>How to play</h2>
+          <ul class="howto-list">
+            <li><strong>Find</strong> — words hide in 8 directions on the letter grid.</li>
+            <li><strong>Select</strong> — drag (or tap a straight path) across letters.</li>
+            <li><strong>Win</strong> — find every word on the list. Use Hint if stuck.</li>
+            <li><strong>Daily</strong> — same puzzle for everyone on an Asia/Karachi day.</li>
+          </ul>
+          <button type="button" class="btn primary" id="btn-howto-ok">Got it</button>
+        </div>
+      </section>
+
+      <!-- PLAY -->
+      <section class="screen" data-screen="play" hidden>
+        <header id="hud" class="hud">
+          <div class="hud-stat"><span class="lbl">Found</span><span data-found>0/0</span></div>
+          <div class="hud-stat"><span class="lbl">Time</span><span data-timer>0:00</span></div>
+          <div class="hud-stat"><span class="badge" data-mode>Play</span></div>
+          <button type="button" class="icon-btn" id="btn-hint" aria-label="Hint">💡</button>
+          <button type="button" class="icon-btn" id="btn-mute" aria-label="Mute">🔊</button>
+          <button type="button" class="icon-btn" id="btn-home" aria-label="Home">⌂</button>
+        </header>
+        <div class="play-body">
+          <div id="grid" class="letter-grid" role="grid" aria-label="Word search grid"></div>
+          <ul id="word-list" class="word-list" aria-label="Words to find"></ul>
+        </div>
+        <p class="hint-toast" id="hint-toast" hidden></p>
+        <div id="win" class="win-overlay" hidden>
+          <div class="panel">
+            <h2>You found them all!</h2>
+            <p class="go-meta"><span data-win-found>0</span> words · <span data-win-time>0:00</span></p>
+            <button type="button" class="btn primary" id="btn-retry">Retry</button>
+            <button type="button" class="btn secondary" id="btn-share">Share</button>
+            <button type="button" class="btn ghost" id="btn-go-home">Home</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
