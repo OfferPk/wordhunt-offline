@@ -37,6 +37,8 @@ import {
 } from './game/persist';
 import { ads, iap } from './ads/stubs';
 import type { Cell } from './puzzle/path';
+import { homeDailyCta } from './ui/homeDaily';
+import { formatHintToast, lettersLeftInWord, HINT_BUTTON_LABEL } from './ui/hintCue';
 
 type Screen = 'home' | 'howto' | 'play';
 
@@ -72,10 +74,11 @@ function refreshHome(): void {
   $('#home-words').textContent = String(getWordsFoundTotal());
   const key = dailyKeyKarachi();
   const rec = getDailyRecord(key);
-  const meta = $('#daily-meta');
-  meta.textContent = rec?.completed
-    ? `Daily ${key} ✓ completed`
-    : `Daily ${key} ready`;
+  const cta = homeDailyCta(key, Boolean(rec?.completed));
+  $('#daily-label').textContent = cta.label;
+  $('#daily-meta').textContent = cta.meta;
+  const dailyBtn = $('#btn-daily') as HTMLButtonElement;
+  dailyBtn.dataset.action = cta.action;
   const streak = getStreak();
   const streakEl = $('#home-streak');
   if (streak.count >= 1) {
@@ -370,7 +373,17 @@ function onWin(): void {
   $('#win').hidden = false;
 }
 
-function doHint(): void {
+function showRewardHintModal(): void {
+  const el = document.getElementById('reward-hint');
+  if (el) el.hidden = false;
+}
+
+function hideRewardHintModal(): void {
+  const el = document.getElementById('reward-hint');
+  if (el) el.hidden = true;
+}
+
+function applyHintAndToast(): void {
   if (!session || isWin(session)) return;
   if (!ads.rewardedHint()) return;
   const hint = applyHint(session, mulberry32(hashStringToUint32(`hint|${Date.now()}`)));
@@ -378,15 +391,30 @@ function doHint(): void {
   if (!hint) {
     toast.textContent = 'No hints left';
     toast.hidden = false;
+    window.setTimeout(() => {
+      toast.hidden = true;
+    }, 2200);
     return;
   }
-  toast.textContent = `Hint: letter “${hint.letter}” revealed`;
+  const placed = session.puzzle.placed.find((p) => p.word === hint.word);
+  const cells = placed?.cells ?? [];
+  const left = lettersLeftInWord(hint.word, cells, session.hintedCells);
+  toast.textContent = formatHintToast(hint.letter, hint.word.length, left);
   toast.hidden = false;
   paintCells();
   vibrate(10);
   window.setTimeout(() => {
     toast.hidden = true;
-  }, 2200);
+  }, 2600);
+}
+
+function doHint(): void {
+  if (!session || isWin(session)) return;
+  if (getSettings().adsRemoved) {
+    applyHintAndToast();
+    return;
+  }
+  showRewardHintModal();
 }
 
 function shareWin(): void {
@@ -451,7 +479,11 @@ function maybeShowA2hs(): void {
 async function boot(): Promise<void> {
   bank = await loadWordBank();
   $('#btn-play').addEventListener('click', () => startEndless());
-  $('#btn-daily').addEventListener('click', () => startDaily());
+  $('#btn-daily').addEventListener('click', () => {
+    const action = ($('#btn-daily') as HTMLButtonElement).dataset.action;
+    if (action === 'endless') startEndless();
+    else startDaily();
+  });
   $('#btn-howto').addEventListener('click', () => showScreen('howto'));
   $('#btn-howto-ok').addEventListener('click', () => {
     setOnboarded(true);
@@ -480,7 +512,14 @@ async function boot(): Promise<void> {
     startEndless();
   });
   $('#btn-share').addEventListener('click', () => shareWin());
-  $('#btn-hint').addEventListener('click', () => doHint());
+  const hintBtn = $('#btn-hint') as HTMLButtonElement;
+  hintBtn.setAttribute('aria-label', HINT_BUTTON_LABEL);
+  hintBtn.title = HINT_BUTTON_LABEL;
+  hintBtn.addEventListener('click', () => doHint());
+  $('#btn-reward-hint-ok').addEventListener('click', () => {
+    hideRewardHintModal();
+    applyHintAndToast();
+  });
 
   const a2hsOk = document.getElementById('a2hs-ok');
   a2hsOk?.addEventListener('click', () => {

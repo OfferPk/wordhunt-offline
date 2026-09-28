@@ -65,7 +65,7 @@
           <div class="hud-stat"><span class="lbl">Found</span><span data-found>0/0</span></div>
           <div class="hud-stat"><span class="lbl">Time</span><span data-timer>0:00</span></div>
           <div class="hud-stat"><span class="badge" data-mode>Play</span></div>
-          <button type="button" class="icon-btn" id="btn-hint" aria-label="Hint">💡</button>
+          <button type="button" class="icon-btn" id="btn-hint" aria-label="Hint (reveals a letter)" title="Hint (reveals a letter)">💡</button>
           <button type="button" class="icon-btn" id="btn-mute" aria-label="Mute">🔊</button>
           <button type="button" class="icon-btn" id="btn-home" aria-label="Home">⌂</button>
         </header>
@@ -84,6 +84,15 @@
           </div>
         </div>
       </section>
+
+      <!-- REWARDED HINT STUB -->
+      <div id="reward-hint" class="win-overlay reward-hint-overlay" hidden>
+        <div class="panel">
+          <h2>Rewarded hint (stub)</h2>
+          <p class="go-meta">Watch a short ad to reveal a letter.</p>
+          <button type="button" class="btn primary" id="btn-reward-hint-ok">Continue</button>
+        </div>
+      </div>
 
       <div id="a2hs" class="a2hs" hidden>
         <span>Install WordHunt: browser menu → <strong>Add to Home Screen</strong><br /><em class="a2hs-ur">Home screen par add karein — offline chalega.</em></span>
