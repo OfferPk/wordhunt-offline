@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-09-28
 
 ### Daily seed UX after complete
 - When today’s daily is completed, Home `#daily-label` → `Daily ✓ · Play endless`; secondary meta `Next daily after midnight PKT`; button routes to endless (no same-seed re-entry)
