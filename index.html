@@ -25,6 +25,7 @@
             · Words <strong id="home-words">0</strong>
           </p>
           <p class="daily-meta" id="daily-meta"></p>
+          <p class="streak-line" id="home-streak" hidden>Streak: <strong id="streak-count">0</strong></p>
           <button type="button" class="btn primary" id="btn-play">Play</button>
           <button type="button" class="btn secondary" id="btn-daily">
             <span id="daily-label">Daily Challenge</span>
@@ -77,12 +78,17 @@
           <div class="panel">
             <h2>You found them all!</h2>
             <p class="go-meta"><span data-win-found>0</span> words · <span data-win-time>0:00</span></p>
-            <button type="button" class="btn primary" id="btn-retry">Retry</button>
+            <button type="button" class="btn primary" id="btn-win-primary">New puzzle</button>
             <button type="button" class="btn secondary" id="btn-share">Share</button>
             <button type="button" class="btn ghost" id="btn-go-home">Home</button>
           </div>
         </div>
       </section>
+
+      <div id="a2hs" class="a2hs" hidden>
+        <span>Install WordHunt: browser menu → <strong>Add to Home Screen</strong><br /><em class="a2hs-ur">Home screen par add karein — offline chalega.</em></span>
+        <button type="button" id="a2hs-ok" class="btn tiny">OK</button>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

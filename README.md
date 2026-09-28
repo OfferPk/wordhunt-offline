@@ -20,12 +20,14 @@ npm install
 npm run dev
 ```
 
-Open the printed local URL (usually `http://localhost:5173`).
+Open the printed local URL (usually `http://localhost:5173/wordhunt-offline/`).
+
+Vite `base` is **`/wordhunt-offline/`** (GitHub Pages / static preview path). Dev and `npm run preview` serve under that prefix — open `/wordhunt-offline/`, not the site root.
 
 ```bash
 npm test          # vitest
 npm run build     # tsc + vite build → dist/
-npm run preview   # serve production build
+npm run preview   # serve production build at /wordhunt-offline/
 ```
 
 ## Play

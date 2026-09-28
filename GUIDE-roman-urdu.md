@@ -32,7 +32,7 @@ WordHunt Offline ek **offline word-search** game hai. Letter grid par chhupi Eng
    ```bash
    npm run dev
    ```
-4. Browser mein URL kholo (usually `http://localhost:5173`).
+4. Browser mein URL kholo — base path **`/wordhunt-offline/`** (usually `http://localhost:5173/wordhunt-offline/` ya Pages pe `…/wordhunt-offline/`). Site root nahi.
 5. Production build:
    ```bash
    npm test
@@ -79,8 +79,17 @@ Koi login / demo account nahi — seedha Play dabao.
 
 ### Win overlay
 - **Kahan milega:** Sab words milne ke baad
-- **Kaise use karein:** Retry / Share text / Home.
+- **Kaise use karein:** Endless → **New puzzle**; Daily complete → **Play endless**; Share / Home. (Same-daily Retry nahi — awkward feel avoid.)
 - **Result:** Share clipboard ya system share sheet.
+
+### Daily streak
+- **Kahan milega:** Home pe `Streak: N` (jab count ≥ 1)
+- **Kaise use karein:** Har Asia/Karachi din Daily complete karo; kal complete → streak +1. Ek din miss → agla complete pe reset (sirf complete pe break, open pe nahi).
+- **Result:** `wordhunt:v1:streak` `{ count, lastCompletedKey }`.
+
+### First-run howto + A2HS
+- Pehli visit pe **How to play** auto-open; **Got it** → onboarded (`wordhunt:v1:onboarded`).
+- Home pe dismissible **Add to Home Screen** tip (session dismiss OK); Play pe chhupa.
 
 ### Stats
 - **Kahan milega:** Home pe Games / Words counters

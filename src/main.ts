@@ -30,11 +30,17 @@ import {
   setSettings,
   getDailyRecord,
   saveDailyRecord,
+  getStreak,
+  recordDailyComplete,
+  isOnboarded,
+  setOnboarded,
 } from './game/persist';
 import { ads, iap } from './ads/stubs';
 import type { Cell } from './puzzle/path';
 
 type Screen = 'home' | 'howto' | 'play';
+
+const A2HS_SESSION_KEY = 'wordhunt:a2hs';
 
 let bank: WordBank | null = null;
 let session: SessionState | null = null;
@@ -51,6 +57,8 @@ function showScreen(name: Screen): void {
   document.querySelectorAll<HTMLElement>('.screen').forEach((el) => {
     el.hidden = el.dataset.screen !== name;
   });
+  if (name === 'home') maybeShowA2hs();
+  else hideA2hs();
 }
 
 function formatTime(sec: number): string {
@@ -68,6 +76,14 @@ function refreshHome(): void {
   meta.textContent = rec?.completed
     ? `Daily ${key} ✓ completed`
     : `Daily ${key} ready`;
+  const streak = getStreak();
+  const streakEl = $('#home-streak');
+  if (streak.count >= 1) {
+    streakEl.hidden = false;
+    $('#streak-count').textContent = String(streak.count);
+  } else {
+    streakEl.hidden = true;
+  }
   syncMuteButtons();
   const s = getSettings();
   const removeBtn = $('#btn-remove-ads') as HTMLButtonElement;
@@ -186,7 +202,6 @@ function renderGrid(): void {
   paintCells();
   bindGridInput(gridEl);
 }
-
 
 function paintCells(): void {
   if (!session) return;
@@ -324,6 +339,17 @@ function bindGridInput(gridEl: HTMLElement): void {
   gridEl.onpointercancel = onUp;
 }
 
+function configureWinCtas(): void {
+  const primary = $('#btn-win-primary') as HTMLButtonElement;
+  if (lastMode === 'daily') {
+    primary.textContent = 'Play endless';
+    primary.dataset.action = 'endless';
+  } else {
+    primary.textContent = 'New puzzle';
+    primary.dataset.action = 'endless';
+  }
+}
+
 function onWin(): void {
   if (!session) return;
   stopTimer();
@@ -337,7 +363,9 @@ function onWin(): void {
       totalWords: totalWords(session),
       finishedAt: new Date().toISOString(),
     });
+    recordDailyComplete(session.dailyKey);
   }
+  configureWinCtas();
   ads.showInterstitial();
   $('#win').hidden = false;
 }
@@ -381,9 +409,43 @@ function copyShare(text: string): void {
   }, 1600);
 }
 
-function retry(): void {
-  if (lastMode === 'daily') startDaily();
-  else startEndless();
+function hideA2hs(): void {
+  const a2hs = document.getElementById('a2hs');
+  if (a2hs) a2hs.hidden = true;
+}
+
+/** Show A2HS only on Home — never during Play/Howto. */
+function maybeShowA2hs(): void {
+  const a2hs = document.getElementById('a2hs');
+  if (!a2hs) return;
+  try {
+    if (sessionStorage.getItem(A2HS_SESSION_KEY)) {
+      hideA2hs();
+      return;
+    }
+  } catch {
+    hideA2hs();
+    return;
+  }
+  try {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      hideA2hs();
+      return;
+    }
+  } catch {
+    /* ignore */
+  }
+  const home = document.querySelector<HTMLElement>('[data-screen="home"]');
+  const play = document.querySelector<HTMLElement>('[data-screen="play"]');
+  const howto = document.querySelector<HTMLElement>('[data-screen="howto"]');
+  const onHome = Boolean(home && !home.hidden);
+  const onPlay = Boolean(play && !play.hidden);
+  const onHowto = Boolean(howto && !howto.hidden);
+  if (!onHome || onPlay || onHowto) {
+    hideA2hs();
+    return;
+  }
+  a2hs.hidden = false;
 }
 
 async function boot(): Promise<void> {
@@ -392,6 +454,7 @@ async function boot(): Promise<void> {
   $('#btn-daily').addEventListener('click', () => startDaily());
   $('#btn-howto').addEventListener('click', () => showScreen('howto'));
   $('#btn-howto-ok').addEventListener('click', () => {
+    setOnboarded(true);
     showScreen('home');
     refreshHome();
   });
@@ -413,14 +476,29 @@ async function boot(): Promise<void> {
     showScreen('home');
     refreshHome();
   });
-  $('#btn-retry').addEventListener('click', () => retry());
+  $('#btn-win-primary').addEventListener('click', () => {
+    startEndless();
+  });
   $('#btn-share').addEventListener('click', () => shareWin());
   $('#btn-hint').addEventListener('click', () => doHint());
 
-  showScreen('home');
-  refreshHome();
-  ads.showBanner();
+  const a2hsOk = document.getElementById('a2hs-ok');
+  a2hsOk?.addEventListener('click', () => {
+    hideA2hs();
+    try {
+      sessionStorage.setItem(A2HS_SESSION_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+  });
 
+  refreshHome();
+  if (!isOnboarded()) {
+    showScreen('howto');
+  } else {
+    showScreen('home');
+  }
+  ads.showBanner();
 }
 
 async function registerSW(): Promise<void> {

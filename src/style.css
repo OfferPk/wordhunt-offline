@@ -241,3 +241,52 @@ html, body {
 @media (min-height: 700px) {
   .word-list { max-height: 140px; }
 }
+
+.streak-line {
+  margin: 0;
+  color: var(--coral);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.streak-line strong { color: var(--coral); }
+
+.btn.tiny {
+  width: auto;
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  background: rgba(64, 196, 180, 0.25);
+  color: var(--teal);
+  flex-shrink: 0;
+}
+
+.a2hs {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  width: min(94vw, 400px);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  background: #152038;
+  border: 1px solid var(--teal);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.8rem;
+  z-index: 3;
+  box-shadow: 0 0 20px rgba(64, 196, 180, 0.25);
+  pointer-events: auto;
+  color: var(--text);
+  text-align: left;
+}
+.a2hs[hidden] { display: none !important; }
+.a2hs span { flex: 1; line-height: 1.35; }
+.a2hs-ur {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-style: normal;
+  font-size: 0.75rem;
+}

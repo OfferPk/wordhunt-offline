@@ -11,6 +11,11 @@ export type DailyRecord = {
   finishedAt?: string;
 };
 
+export type Streak = {
+  count: number;
+  lastCompletedKey: string;
+};
+
 function canUseStorage(): boolean {
   try {
     return typeof localStorage !== 'undefined';
@@ -101,6 +106,70 @@ export function saveDailyRecord(dailyKey: string, record: DailyRecord): void {
       finishedAt: completed ? (prev?.finishedAt ?? record.finishedAt ?? new Date().toISOString()) : undefined,
     }),
   );
+}
+
+/**
+ * Shift a YYYY-MM-DD civil date by deltaDays (calendar days).
+ * Daily keys are Asia/Karachi calendar dates — treat as civil, not UTC instants.
+ */
+export function shiftDailyKey(key: string, deltaDays: number): string {
+  const parts = key.split('-').map(Number);
+  const y = parts[0]!;
+  const m = parts[1]!;
+  const d = parts[2]!;
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + deltaDays);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getUTCDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+export function getStreak(): Streak {
+  const raw = readRaw('streak');
+  if (!raw) return { count: 0, lastCompletedKey: '' };
+  try {
+    const parsed = JSON.parse(raw) as Partial<Streak>;
+    const count = Number(parsed.count);
+    const lastCompletedKey = typeof parsed.lastCompletedKey === 'string' ? parsed.lastCompletedKey : '';
+    return {
+      count: Number.isFinite(count) && count > 0 ? Math.floor(count) : 0,
+      lastCompletedKey,
+    };
+  } catch {
+    return { count: 0, lastCompletedKey: '' };
+  }
+}
+
+function writeStreak(streak: Streak): void {
+  writeRaw('streak', JSON.stringify(streak));
+}
+
+/**
+ * On daily complete: if yesterday (PKT calendar) was the last completed day → streak+1,
+ * else reset to 1. Same-day re-complete is idempotent (does not bump again).
+ * Missing a day breaks streak only on the next complete — not on app open.
+ */
+export function recordDailyComplete(dailyKey: string): Streak {
+  const prev = getStreak();
+  if (prev.lastCompletedKey === dailyKey && prev.count >= 1) {
+    return prev;
+  }
+  const yesterday = shiftDailyKey(dailyKey, -1);
+  const next: Streak =
+    prev.lastCompletedKey === yesterday && prev.count >= 1
+      ? { count: prev.count + 1, lastCompletedKey: dailyKey }
+      : { count: 1, lastCompletedKey: dailyKey };
+  writeStreak(next);
+  return next;
+}
+
+export function isOnboarded(): boolean {
+  return readRaw('onboarded') === 'true';
+}
+
+export function setOnboarded(value = true): void {
+  writeRaw('onboarded', value ? 'true' : 'false');
 }
 
 /** Test helper — clear all wordhunt keys. */
