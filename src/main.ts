@@ -32,15 +32,14 @@ import {
   saveDailyRecord,
   getStreak,
   recordDailyComplete,
-  isOnboarded,
   setOnboarded,
 } from './game/persist';
-import { ads, iap } from './ads/stubs';
+import { ads } from './ads/stubs';
 import type { Cell } from './puzzle/path';
 import { homeDailyCta } from './ui/homeDaily';
 import { formatHintToast, lettersLeftInWord, HINT_BUTTON_LABEL } from './ui/hintCue';
 
-type Screen = 'home' | 'howto' | 'play';
+type Screen = 'home' | 'settings' | 'play';
 
 const A2HS_SESSION_KEY = 'wordhunt:a2hs';
 
@@ -52,6 +51,13 @@ let selecting = false;
 let path: Cell[] = [];
 let timerId: number | null = null;
 let wonHandled = false;
+let winAdPending = false;
+
+type WinGlobals = {
+  Meta?: { win?: (d: Record<string, unknown>) => number; runCoach?: (force: boolean) => void; move?: () => void };
+  WH_META_BOOT?: () => void;
+  __wh?: unknown;
+};
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
 
@@ -88,10 +94,6 @@ function refreshHome(): void {
     streakEl.hidden = true;
   }
   syncMuteButtons();
-  const s = getSettings();
-  const removeBtn = $('#btn-remove-ads') as HTMLButtonElement;
-  removeBtn.textContent = s.adsRemoved ? 'Ads removed ✓' : 'Remove ads';
-  removeBtn.disabled = s.adsRemoved;
 }
 
 function syncMuteButtons(): void {
@@ -126,7 +128,6 @@ function categoryBank(): string[] {
 }
 
 function startEndless(): void {
-  ads.showInterstitial();
   const words = categoryBank();
   const puzzle = generatePuzzle(words, createEndlessRng(), { size: 10, count: 8 });
   session = createSession(puzzle, { mode: 'endless', category: lastCategory });
@@ -137,7 +138,6 @@ function startEndless(): void {
 }
 
 function startDaily(): void {
-  ads.showInterstitial();
   const key = dailyKeyKarachi();
   const words = bank ? allWords(bank) : [];
   const rng = createDailyRng(key);
@@ -152,6 +152,7 @@ function startDaily(): void {
 function mountPlay(): void {
   if (!session) return;
   showScreen('play');
+  if (getGamesPlayed() === 1) (window as unknown as WinGlobals).Meta?.runCoach?.(false);
   ($('[data-mode]') as HTMLElement).textContent =
     session.mode === 'daily' ? 'Daily' : session.category;
   renderGrid();
@@ -298,6 +299,7 @@ function finishSelect(): void {
   if (matched) {
     vibrate(18);
     addWordsFoundTotal(1);
+    (window as unknown as WinGlobals).Meta?.move?.();
     renderWordList();
     paintCells();
     updateHud();
@@ -369,8 +371,25 @@ function onWin(): void {
     recordDailyComplete(session.dailyKey);
   }
   configureWinCtas();
-  ads.showInterstitial();
+  winAdPending = true;
   $('#win').hidden = false;
+  const W = window as unknown as WinGlobals;
+  if (W.Meta?.win) {
+    try {
+      const hints = session.hintedCells.size;
+      const stars = hints === 0 ? 3 : hints <= 2 ? 2 : 1;
+      W.Meta.win({ stars, clean: hints === 0, daily: session.mode === 'daily', ms: sec * 1000, words: totalWords(session), all: session.category === 'All' });
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+}
+
+/** Interstitial only after a finished puzzle, when the player taps on (gated + paced in ads.js). */
+function afterPuzzleAd(): void {
+  if (!winAdPending) return;
+  winAdPending = false;
+  ads.showInterstitialAfterPuzzle();
 }
 
 function showRewardHintModal(): void {
@@ -385,7 +404,6 @@ function hideRewardHintModal(): void {
 
 function applyHintAndToast(): void {
   if (!session || isWin(session)) return;
-  if (!ads.rewardedHint()) return;
   const hint = applyHint(session, mulberry32(hashStringToUint32(`hint|${Date.now()}`)));
   const toast = $('#hint-toast');
   if (!hint) {
@@ -410,10 +428,6 @@ function applyHintAndToast(): void {
 
 function doHint(): void {
   if (!session || isWin(session)) return;
-  if (getSettings().adsRemoved) {
-    applyHintAndToast();
-    return;
-  }
   showRewardHintModal();
 }
 
@@ -444,6 +458,8 @@ function hideA2hs(): void {
 
 /** Show A2HS only on Home — never during Play/Howto. */
 function maybeShowA2hs(): void {
+  const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
+  if (cap?.isNativePlatform?.()) return; // installed Android app: no add-to-home-screen tip
   const a2hs = document.getElementById('a2hs');
   if (!a2hs) return;
   try {
@@ -484,18 +500,13 @@ async function boot(): Promise<void> {
     if (action === 'endless') startEndless();
     else startDaily();
   });
-  $('#btn-howto').addEventListener('click', () => showScreen('howto'));
-  $('#btn-howto-ok').addEventListener('click', () => {
-    setOnboarded(true);
+  $('#btn-settings').addEventListener('click', () => showScreen('settings'));
+  $('#btn-settings-back').addEventListener('click', () => {
     showScreen('home');
     refreshHome();
   });
   $('#btn-mute-home').addEventListener('click', toggleMute);
   $('#btn-mute').addEventListener('click', toggleMute);
-  $('#btn-remove-ads').addEventListener('click', () => {
-    iap.purchaseRemoveAds();
-    refreshHome();
-  });
   $('#btn-home').addEventListener('click', () => {
     stopTimer();
     session = null;
@@ -503,12 +514,14 @@ async function boot(): Promise<void> {
     refreshHome();
   });
   $('#btn-go-home').addEventListener('click', () => {
+    afterPuzzleAd();
     stopTimer();
     session = null;
     showScreen('home');
     refreshHome();
   });
   $('#btn-win-primary').addEventListener('click', () => {
+    afterPuzzleAd();
     startEndless();
   });
   $('#btn-share').addEventListener('click', () => shareWin());
@@ -518,8 +531,11 @@ async function boot(): Promise<void> {
   hintBtn.addEventListener('click', () => doHint());
   $('#btn-reward-hint-ok').addEventListener('click', () => {
     hideRewardHintModal();
-    applyHintAndToast();
+    void ads.showRewarded().then((ok) => {
+      if (ok) applyHintAndToast();
+    });
   });
+  $('#btn-reward-hint-no').addEventListener('click', () => hideRewardHintModal());
 
   const a2hsOk = document.getElementById('a2hs-ok');
   a2hsOk?.addEventListener('click', () => {
@@ -532,12 +548,32 @@ async function boot(): Promise<void> {
   });
 
   refreshHome();
-  if (!isOnboarded()) {
-    showScreen('howto');
-  } else {
-    showScreen('home');
-  }
+  setOnboarded(true);
+  showScreen('home');
   ads.showBanner();
+  const W = window as unknown as WinGlobals;
+  W.__wh = {
+    startDaily,
+    startEndless,
+    isFirstGame: () => getGamesPlayed() <= 1 && !!session,
+    gamesPlayed: getGamesPlayed,
+    wordsFound: getWordsFoundTotal,
+    streak: () => getStreak(),
+    session: () => session,
+    showScreen,
+    rerender: () => {
+      renderWordList();
+      paintCells();
+      updateHud();
+    },
+    winForTest: () => {
+      if (!session) return;
+      for (const p of session.puzzle.placed) session.found.add(p.word);
+      wonHandled = true;
+      onWin();
+    },
+  };
+  W.WH_META_BOOT?.();
 }
 
 async function registerSW(): Promise<void> {

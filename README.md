@@ -78,3 +78,11 @@ public/       icons, manifest, words/en-clean.json
 ## License / IP
 
 Original word-search IP. Not affiliated with NYT Games, Wordle, Wordscapes, or Word Search Explorer.
+
+## v0.2.0 (Android + meta layer)
+
+- Android: Capacitor 8 project in `android/` (`com.offerpk.wordhunt`, `webDir: dist`). `.github/workflows/android.yml` runs tests, `npm run build`, `cap sync` and builds a signed AAB/APK on every `v*` tag. Vite `base` is now `./` so the same build works on GitHub Pages and in the app.
+- AdMob (`public/js/ads.js`, Google **test** IDs in `public/js/ads-config.js`): rewarded ads only from a tap (hint, 24h skin trial); interstitials only from the win card's buttons, never on launch/exit or in the first session (`public/js/adgate.js`). The fake "Remove ads" button is gone.
+- Meta layer (`public/js/metakit.js` + `meta-config.js`): How to play card, 7-day daily reward + seeded Daily challenge, Skin Shop (tile styles + backdrops, tap to preview, 24h rewarded trial), achievements + Stats, first-puzzle coach, accessibility settings. Coins are cosmetic only.
+- Store: `LAUNCH_CHECKLIST.md`, `store/LISTING-v0.2.md`, `store/screenshots/01–08.png`, Play Store guard workflow (`play-store.yml`).
+- Tests: `npm test` (vitest + meta/ads unit + store guard) and `npm run build && node tests/meta.browser.cjs http://localhost:PORT/` against `dist/`.

@@ -1,0 +1,11 @@
+{
+  "appId": "com.offerpk.wordhunt",
+  "appName": "WordHunt Offline",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#122a3a"
+  },
+  "plugins": {
+    "AdMob": {}
+  }
+}

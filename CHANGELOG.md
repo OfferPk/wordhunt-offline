@@ -1,3 +1,8 @@
+## 0.2.0 (2026-10-14)
+- Capacitor Android app with signed CI builds; AdMob (test IDs) with gated, post-puzzle interstitials only
+- How to play card, daily reward + challenge, Skin Shop, achievements + stats, first-puzzle coach, accessibility settings
+- Removed the stub "Remove ads" button and the stub rewarded-hint wording
+
 # Changelog
 
 ## 0.1.2 — 2026-09-28
